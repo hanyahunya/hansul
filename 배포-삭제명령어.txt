@@ -1,0 +1,4 @@
+aws login --profile your-aws-profile
+
+powershell -NoProfile -File .\infra\aws\hansul\deploy.ps1 -IncludeAi
+powershell -NoProfile -File .\infra\aws\hansul\destroy.ps1 -IncludeAi

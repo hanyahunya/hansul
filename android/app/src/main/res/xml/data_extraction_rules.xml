@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and higher. Copied phone videos (up to 8 GiB) would exceed the 25 MB cloud backup quota;
+     a device-to-device transfer has no quota, so they move to a new phone with their recipes. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="local-cooking/videos/" />
+    </cloud-backup>
+</data-extraction-rules>

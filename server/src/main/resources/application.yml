@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: hansul-server
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/hansul}
+    username: ${DATABASE_USERNAME:hansul}
+    password: ${DATABASE_PASSWORD:hansul}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak advertises the emulator-reachable URL as its canonical issuer.
+          # The server fetches signing keys through the host-reachable URL below.
+          issuer-uri: ${OIDC_ISSUER_URI:http://10.0.2.2:8180/realms/hansul}
+          jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/realms/hansul/protocol/openid-connect/certs}
+          audiences: ${OIDC_AUDIENCE:hansul-api}
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+hansul:
+  recipe-import:
+    connect-timeout: 3s
+    response-timeout: 8s
+    max-response-bytes: 4194304
+  video-import:
+    gemini:
+      api-base-url: ${HANSUL_GEMINI_API_BASE_URL:https://generativelanguage.googleapis.com}
+      api-key: ${HANSUL_GEMINI_API_KEY:}
+      model: ${HANSUL_GEMINI_MODEL:gemini-3.8-flash}
+      thinking-level: ${HANSUL_GEMINI_THINKING_LEVEL:}      # empty = omit thinkingConfig
+      media-resolution: ${HANSUL_GEMINI_MEDIA_RESOLUTION:}  # empty = omit (API default = low for video)
+      paid-tier: ${HANSUL_GEMINI_PAID_TIER:false}            # true only for a billing-enabled key; phone videos need it
+      transcript-max-output-tokens: 65536
+      recipe-max-output-tokens: 16384
+      request-timeout: 300s
+    youtube:
+      api-base-url: https://www.googleapis.com
+      oembed-base-url: https://www.youtube.com
+      api-key: ${HANSUL_YOUTUBE_API_KEY:}                   # optional: enables description + duration
+    max-video-seconds: 1800
+    daily-limit-per-user: 10
+    worker-concurrency: 2
+    upload:
+      directory: ${HANSUL_VIDEO_UPLOAD_DIR:}                # empty = ${java.io.tmpdir}/hansul-video-uploads
+      max-bytes: 314572800
+      chunk-bytes: 4194304
+      max-active-per-user: 2
+      ttl: 6h
+      max-total-bytes: 3221225472                           # every user's unfinished uploads together
+      min-free-bytes: 2147483648                            # chunks and assembly leave this much disk free
+      idle-timeout: 5m                                      # an upload without a chunk this long makes room at a limit

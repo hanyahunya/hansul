@@ -1,0 +1,19 @@
+{
+  "model": "gpt-6-sol",
+  "store": false,
+  "instructions": "Return a JSON object with ok set to true.",
+  "input": [{"role": "user", "content": "Connectivity test only."}],
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "name": "hansul_probe",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {"ok": {"type": "boolean"}},
+        "required": ["ok"],
+        "additionalProperties": false
+      }
+    }
+  }
+}

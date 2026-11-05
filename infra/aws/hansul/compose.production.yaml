@@ -1,0 +1,84 @@
+name: hansul
+
+services:
+  postgres:
+    image: postgres:18.6
+    container_name: hansul-postgres
+    environment:
+      POSTGRES_DB: hansul
+      POSTGRES_USER: hansul
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?missing DB_PASSWORD}
+    volumes:
+      - /srv/hansul/postgres:/var/lib/postgresql
+      - ./init-keycloak-db.sh:/docker-entrypoint-initdb.d/init-keycloak-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hansul -d hansul"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [backend]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: hansul
+      KC_DB_PASSWORD: ${DB_PASSWORD:?missing DB_PASSWORD}
+      KC_HOSTNAME: https://hansul.example.com
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?missing KC_ADMIN_PASSWORD}
+    volumes:
+      - ./hansul-realm.production.json:/opt/keycloak/data/import/hansul-realm.json:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [backend]
+
+  api:
+    build: .
+    image: hansul-api:${RELEASE_ID:?missing RELEASE_ID}
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/hansul
+      DATABASE_USERNAME: hansul
+      DATABASE_PASSWORD: ${DB_PASSWORD:?missing DB_PASSWORD}
+      OIDC_ISSUER_URI: https://hansul.example.com/realms/hansul
+      OIDC_JWK_SET_URI: http://keycloak:8080/realms/hansul/protocol/openid-connect/certs
+      OIDC_AUDIENCE: hansul-api
+      HANSUL_AI_API_BASE_URL: http://${AI_PRIVATE_IP:?missing AI_PRIVATE_IP}:8765
+      HANSUL_AI_API_KEY: ${AI_TOKEN:?missing AI_TOKEN}
+      HANSUL_AI_MODEL: gpt-6-sol
+      HANSUL_GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      HANSUL_GEMINI_PAID_TIER: ${GEMINI_PAID_TIER:-false}
+      HANSUL_YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      HANSUL_VIDEO_UPLOAD_DIR: /var/lib/hansul/video-uploads
+    volumes:
+      # On the host's root disk, not in the container: a new release keeps unfinished and retryable uploads,
+      # and the Postgres data disk never fills with video.
+      - /var/lib/hansul/video-uploads:/var/lib/hansul/video-uploads
+    depends_on:
+      postgres: { condition: service_healthy }
+      keycloak: { condition: service_started }
+    restart: unless-stopped
+    networks: [backend]
+
+  origin:
+    image: nginx:1.27-alpine
+    ports: ["443:443"]
+    volumes:
+      - ./origin-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /srv/hansul/secrets/cloudflare.crt:/run/tls/cloudflare.crt:ro
+      - /srv/hansul/secrets/cloudflare.key:/run/tls/cloudflare.key:ro
+    depends_on:
+      api: { condition: service_started }
+      keycloak: { condition: service_started }
+    restart: unless-stopped
+    networks: [backend]
+
+networks:
+  backend: {}

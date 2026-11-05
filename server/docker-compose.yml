@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:18.6
+    environment:
+      POSTGRES_DB: hansul
+      POSTGRES_USER: hansul
+      POSTGRES_PASSWORD: hansul
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hansul -d hansul"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - hansul-postgres:/var/lib/postgresql
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: ${KEYCLOAK_ISSUER_BASE_URL:-http://10.0.2.2:8180}
+    ports:
+      - "${KEYCLOAK_PORT:-8180}:8080"
+    volumes:
+      - ./infra/keycloak/hansul-realm.json:/opt/keycloak/data/import/hansul-realm.json:ro
+
+volumes:
+  hansul-postgres:

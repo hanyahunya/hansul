@@ -1,0 +1,36 @@
+# IDE and local machine state
+.idea/
+.vscode/
+*.iml
+android/local.properties
+
+# Gradle and generated output
+**/.gradle/
+**/build/
+**/.kotlin/
+**/.cxx/
+android/captures/
+
+# Local secrets and runtime files
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.log
+infra/aws/**/.terraform/
+infra/aws/**/.terraform.lock.hcl
+infra/aws/**/terraform.tfstate*
+infra/aws/**/deploy.config.psd1
+infra/aws/**/.local/
+**/__pycache__/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Private keys and certificates
+*.pem
+*.p12
+*.pfx
+*.key

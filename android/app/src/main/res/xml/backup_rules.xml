@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and lower. Copied phone videos (up to 8 GiB) would exceed the 25 MB Auto Backup quota. -->
+<full-backup-content>
+    <exclude domain="file" path="local-cooking/videos/" />
+</full-backup-content>
